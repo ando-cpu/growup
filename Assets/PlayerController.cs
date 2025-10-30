@@ -1,37 +1,67 @@
 ﻿using UnityEngine;
 
+[AddComponentMenu("DangSon/PlayerController")]
 public class PlayerController : MonoBehaviour
 {
+    [Header("Player Settings")]
+    public LayerMask groundLayer;
+    public float moveSpeed = 5f;
+    public float jumpForce = 10f;
+    public Transform groundCheck;
+    public float groundCheckRadius = 0.2f;
+
     private Rigidbody2D rb;
-    private SpriteRenderer sr;
+    private bool facingRight = true;
 
-    [Header("Movement Settings")]
-    public float speed = 5f;
-
-    void Start()
+    private void Start()
     {
-        // Lấy component Rigidbody2D và SpriteRenderer trên nhân vật
         rb = GetComponent<Rigidbody2D>();
-        sr = GetComponent<SpriteRenderer>();
     }
 
-    void FixedUpdate()
+    private void Update()
     {
         Move();
+
+        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
+        {
+            Jump();
+        }
     }
 
     private void Move()
     {
-        // Nhận input ngang (A, D hoặc phím mũi tên)
         float horizontal = Input.GetAxisRaw("Horizontal");
+        rb.velocity = new Vector2(horizontal * moveSpeed, rb.velocity.y);
 
-        // Gán vận tốc theo hướng ngang
-        rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
-
-        // Đảo hướng nhân vật khi di chuyển
-        if (horizontal != 0)
+        if ((horizontal > 0 && !facingRight) || (horizontal < 0 && facingRight))
         {
-            sr.flipX = horizontal < 0;
+            Flip();
         }
+    }
+
+    private void Jump()
+    {
+        rb.velocity = new Vector2(rb.velocity.x, 0f); // reset y để nhảy đều
+        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+    }
+
+    private bool IsGrounded()
+    {
+        return Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+    }
+
+    private void Flip()
+    {
+        facingRight = !facingRight;
+        Vector3 scale = transform.localScale;
+        scale.x *= -1;
+        transform.localScale = scale;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (groundCheck == null) return;
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
     }
 }
